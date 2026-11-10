@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chatbot UI Template</title>
+
+<!-- The AI: free key at https://onetagai.com -->
+<script src="https://onetagai.com/v1.js" data-key="ot_demo000000000000000000000"></script>
+
+<style>
+  /* 1. Make it yours: colors */
+  :root { --brand: #6d28d9; --brand-soft: #ede9fe; --bg: #f4f4f8; --text: #1c1b22; --muted: #6b6a75; }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--bg); font: 16px/1.5 system-ui, sans-serif; color: var(--text); }
+  .bot { width: min(420px, 100vw - 32px); height: 600px; display: flex; flex-direction: column; background: #fff; border-radius: 24px; box-shadow: 0 20px 60px rgba(20, 20, 40, .14); overflow: hidden; }
+  header { display: flex; gap: 12px; align-items: center; padding: 16px 18px; background: var(--brand); color: #fff; }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; background: #fff; display: grid; place-items: center; font-size: 22px; }
+  header b { display: block; } header small { opacity: .8; }
+  #log { flex: 1; overflow-y: auto; padding: 18px; }
+  .msg { max-width: 82%; margin: 0 0 10px; padding: 10px 14px; border-radius: 18px; white-space: pre-wrap; }
+  .me { margin-left: auto; background: var(--brand); color: #fff; border-bottom-right-radius: 6px; }
+  .ai { background: var(--brand-soft); border-bottom-left-radius: 6px; }
+  .typing span { display: inline-block; width: 7px; height: 7px; margin: 0 2px; border-radius: 50%; background: var(--muted); animation: blink 1s infinite; }
+  .typing span:nth-child(2) { animation-delay: .2s; } .typing span:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 50% { opacity: .2; } }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 18px 12px; }
+  .chips button { padding: 7px 12px; border: 1px solid var(--brand); border-radius: 999px; background: #fff; color: var(--brand); font: inherit; font-size: 14px; cursor: pointer; }
+  form { display: flex; gap: 8px; padding: 12px; border-top: 1px solid #ececf2; }
+  input { flex: 1; padding: 12px 14px; border: 1px solid #dcdce6; border-radius: 14px; font: inherit; }
+  form button { padding: 0 18px; border: 0; border-radius: 14px; background: var(--brand); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+</style>
+</head>
+
+<body>
+<!-- 2. Make it yours: name, avatar, first message, suggestions -->
+<div class="bot">
+  <header><div class="avatar">🤖</div><div><b>Support Bot</b><small>Usually replies in seconds</small></div></header>
+  <div id="log"><p class="msg ai">Hi! How can I help you today?</p></div>
+  <div class="chips">
+    <button>What can you do?</button><button>Tell me a fun fact</button><button>Help me write an email</button>
+  </div>
+  <form id="form"><input id="input" placeholder="Type a message…" autocomplete="off" required><button>Send</button></form>
+</div>
+
+<script>
+  // 3. Make it yours: what the bot does
+  const SYSTEM = "You are a friendly support assistant. Answer in two short sentences, no markdown.";
+
+  const log = document.getElementById("log"), input = document.getElementById("input");
+  const history = [];
+  const add = (cls, html) => { const p = document.createElement("p"); p.className = "msg " + cls; p.innerHTML = html; log.append(p); log.scrollTop = log.scrollHeight; return p; };
+
+  async function send(text) {
+    document.querySelector(".chips").remove?.();
+    add("me", "").textContent = text;
+    const reply = add("ai typing", "<span></span><span></span><span></span>");
+    const answer = await onetag.ask(text, null, {
+      system: SYSTEM, history,
+      stream: (piece) => { if (reply.classList.contains("typing")) { reply.classList.remove("typing"); reply.textContent = ""; } reply.textContent += piece; log.scrollTop = log.scrollHeight; },
+    });
+    history.push({ role: "user", content: text }, { role: "assistant", content: answer });
+  }
+
+  document.getElementById("form").onsubmit = (e) => { e.preventDefault(); const t = input.value.trim(); input.value = ""; send(t); };
+  document.querySelectorAll(".chips button").forEach((b) => (b.onclick = () => send(b.textContent)));
+</script>
+</body>
+</html>
